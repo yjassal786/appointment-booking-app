@@ -24,8 +24,8 @@ A modern, responsive appointment booking application built with React, TypeScrip
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
-   cd YOUR_REPOSITORY_NAME
+   git clone https://github.com/yjassal786/appointment-booking-app.git
+   cd appointment-booking-app
    ```
 
 2. Install dependencies:
