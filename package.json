@@ -3,7 +3,7 @@
   "private": false,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://yogesh786.github.io/appointment-booking-app",
+  "homepage": "https://yjassal786.github.io/appointment-booking-app",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

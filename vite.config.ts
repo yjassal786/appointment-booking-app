@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
-    base: process.env.NODE_ENV === 'production' ? '/YOUR_REPOSITORY_NAME/' : '/',
+    base: process.env.NODE_ENV === 'production' ? '/appointment-booking-app/' : '/',
     server: {
       proxy: {
         '/api/email': {
