@@ -1,7 +1,8 @@
 import { EMAIL_CONFIG, WORDPRESS_WEBHOOK } from '../config/email';
 import { QuestionnaireData, AppointmentData } from '../types';
 
-const API_URL = 'http://localhost:3000/api/send-email';
+const RESEND_API_URL = 'https://api.resend.com/emails';
+const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
 const IS_TESTING = true;
 
 // Update these test mode constants
@@ -31,10 +32,11 @@ export const sendQuestionnaireEmail = async (data: EmailData): Promise<{ success
       html: createHtmlEmail(data)
     };
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(RESEND_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify(emailConfig)
     });
