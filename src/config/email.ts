@@ -9,10 +9,10 @@ export const EMAIL_CONFIG = {
   FROM_EMAIL: 'Fitness Questionnaire <onboarding@resend.dev>',
   
   // WhatsApp configuration
-  WHATSAPP_NUMBER: '919876543210', // Replace with your WhatsApp number
+  WHATSAPP_NUMBER: '919501165019', // Updated WhatsApp number
   
   // UPI Payment details
-  UPI_ID: 'fitness@paytm', // Replace with your UPI ID
+  UPI_ID: '9501165019@ptaxis', // Updated UPI ID
 };
 
 // WordPress webhook URL (if using WordPress integration)

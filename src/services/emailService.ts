@@ -1,16 +1,17 @@
 import { EMAIL_CONFIG, WORDPRESS_WEBHOOK } from '../config/email';
 import { QuestionnaireData, AppointmentData } from '../types';
 
-// For GitHub Pages deployment, we'll use a simple solution
-// You can either use EmailJS or deploy your server to a service like Vercel/Netlify
+// Email service configuration - easily switchable between providers
+const EMAIL_SERVICE = {
+  PROVIDER: 'RESEND', // Can be changed to 'SENDGRID', 'NODEMAILER', etc.
+  API_URL: 'https://api.resend.com/emails',
+  API_KEY: import.meta.env.VITE_RESEND_API_KEY,
+  FALLBACK_MODE: !import.meta.env.VITE_RESEND_API_KEY, // Use demo mode if no API key
+};
+
 const IS_TESTING = true;
-
-// Update these test mode constants
 const TEST_FROM_EMAIL = 'onboarding@resend.dev';
-const TEST_TO_EMAIL = 'awesomegymholic786@gmail.com'; // Your Resend account email
-
-// Simple email solution using a free service or webhook
-const WEBHOOK_URL = 'https://formspree.io/f/YOUR_FORM_ID'; // You can use Formspree as an alternative
+const TEST_TO_EMAIL = 'awesomegymholic786@gmail.com';
 
 const planNames = {
   basic: '3 Month Transformation (₹9,999)',
@@ -26,27 +27,87 @@ export interface EmailData {
 
 export const sendQuestionnaireEmail = async (data: EmailData): Promise<{ success: boolean; error?: string }> => {
   try {
-    // For GitHub Pages demo - simulate email sending
-    // In production, you would need a backend server or use EmailJS
-    console.log('Email would be sent with data:', {
+    console.log('🔄 Starting email send process...');
+    
+    // Check if API key is available
+    if (!EMAIL_SERVICE.API_KEY) {
+      console.warn('⚠️ No API key found - running in demo mode');
+      return simulateEmailSend(data);
+    }
+
+    // Prepare email data
+    const emailPayload = {
       from: IS_TESTING ? TEST_FROM_EMAIL : EMAIL_CONFIG.FROM_EMAIL,
-      to: IS_TESTING ? TEST_TO_EMAIL : EMAIL_CONFIG.ADMIN_EMAIL,
+      to: [IS_TESTING ? TEST_TO_EMAIL : EMAIL_CONFIG.ADMIN_EMAIL],
       subject: 'New Fitness Questionnaire Submission',
-      message: formatEmailMessage(data)
+      html: createHtmlEmail(data),
+      text: formatEmailMessage(data)
+    };
+
+    console.log('📧 Sending email to:', emailPayload.to);
+
+    // Send email using Resend API
+    const response = await fetch(EMAIL_SERVICE.API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${EMAIL_SERVICE.API_KEY}`,
+      },
+      body: JSON.stringify(emailPayload)
     });
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Handle response
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('❌ Email API Error:', response.status, errorData);
+      
+      // Provide specific error messages
+      if (response.status === 401) {
+        throw new Error('Invalid API key - please check your Resend API key');
+      } else if (response.status === 422) {
+        throw new Error('Email validation failed - check sender/recipient addresses');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded - please try again later');
+      } else {
+        throw new Error(`Email service error: ${response.status} - ${errorData}`);
+      }
+    }
 
-    // For demo purposes, always return success
-    // In production, you would implement actual email sending
-    console.log('Email sent successfully (demo mode)');
+    const result = await response.json();
+    console.log('✅ Email sent successfully! ID:', result.id);
+    
     return { success: true };
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to send email:', errorMessage);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('❌ Email sending failed:', errorMessage);
+    
+    // In production, you might want to retry or use fallback
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return { 
+        success: false, 
+        error: 'Network error - please check your internet connection and try again' 
+      };
+    }
+    
     return { success: false, error: errorMessage };
   }
+};
+
+// Fallback function for demo mode
+const simulateEmailSend = async (data: EmailData): Promise<{ success: boolean; error?: string }> => {
+  console.log('🎭 Demo Mode: Email would be sent with data:', {
+    from: IS_TESTING ? TEST_FROM_EMAIL : EMAIL_CONFIG.FROM_EMAIL,
+    to: IS_TESTING ? TEST_TO_EMAIL : EMAIL_CONFIG.ADMIN_EMAIL,
+    subject: 'New Fitness Questionnaire Submission',
+    message: formatEmailMessage(data)
+  });
+
+  // Simulate API call delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  console.log('✅ Demo email sent successfully!');
+  return { success: true };
 };
 
 const createHtmlEmail = (data: EmailData): string => {

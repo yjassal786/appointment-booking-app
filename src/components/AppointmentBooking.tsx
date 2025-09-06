@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Phone, Upload, MessageCircle, ArrowLeft, CreditCard } from 'lucide-react';
+import { Calendar, Clock, Phone, Upload, MessageCircle, ArrowLeft, CreditCard, TestTube, AlertCircle, CheckCircle } from 'lucide-react';
 import { AppointmentData } from '../types';
+import { validateForm, testEmailService } from '../utils/validation';
 
 interface AppointmentBookingProps {
   selectedPlan: string;
@@ -9,9 +10,9 @@ interface AppointmentBookingProps {
 }
 
 const planDetails = {
-  basic: { name: '3 Month Transformation', price: '₹9,999' },
-  premium: { name: '6 Month Complete', price: '₹17,999' },
-  elite: { name: '9 Month Elite', price: '₹24,999' }
+  basic: { name: '3 Month Transformation', price: '₹9,999', numericPrice: '9999' },
+  premium: { name: '6 Month Complete', price: '₹17,999', numericPrice: '17999' },
+  elite: { name: '9 Month Elite', price: '₹24,999', numericPrice: '24999' }
 };
 
 const timeSlots = [
@@ -30,11 +31,18 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
   });
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [showPayment, setShowPayment] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [emailTestResult, setEmailTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   const plan = planDetails[selectedPlan as keyof typeof planDetails];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation errors when user starts typing
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,6 +53,14 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
   };
 
   const handleSubmit = () => {
+    // Validate form before submitting
+    const validation = validateForm(formData);
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
+      return;
+    }
+
     const appointmentData: AppointmentData = {
       ...formData,
       paymentScreenshot: paymentScreenshot || undefined
@@ -52,9 +68,24 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
     onComplete(appointmentData);
   };
 
+  const handleEmailTest = async () => {
+    setIsTestingEmail(true);
+    try {
+      const result = await testEmailService();
+      setEmailTestResult(result);
+    } catch (error) {
+      setEmailTestResult({
+        success: false,
+        message: 'Test failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+      });
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
   const isFormValid = formData.name && formData.email && formData.phone && formData.date && formData.time;
 
-  const whatsappNumber = "919876543210";
+  const whatsappNumber = "919501165019";
   const whatsappMessage = `Hi! I've booked the ${plan.name} plan and made the payment of ${plan.price}. My appointment is on ${formData.date} at ${formData.time}. Name: ${formData.name}`;
 
   return (
@@ -74,6 +105,55 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
             <p className="text-gray-300">Selected Plan: <span className="text-pink-400 font-semibold">{plan.name}</span></p>
             <p className="text-2xl font-bold text-green-400 mt-2">{plan.price}</p>
           </div>
+
+          {/* Email Test Section */}
+          <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-semibold">Email Service Status</h3>
+                <p className="text-gray-400 text-sm">Test the email functionality before booking</p>
+              </div>
+              <button
+                onClick={handleEmailTest}
+                disabled={isTestingEmail}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors duration-200"
+              >
+                <TestTube className="w-4 h-4" />
+                {isTestingEmail ? 'Testing...' : 'Test Email'}
+              </button>
+            </div>
+            {emailTestResult && (
+              <div className={`mt-3 p-3 rounded-lg flex items-center gap-2 ${
+                emailTestResult.success 
+                  ? 'bg-green-500/20 border border-green-500/30' 
+                  : 'bg-red-500/20 border border-red-500/30'
+              }`}>
+                {emailTestResult.success ? (
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                )}
+                <span className={emailTestResult.success ? 'text-green-300' : 'text-red-300'}>
+                  {emailTestResult.message}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <h3 className="text-red-300 font-semibold">Please fix the following errors:</h3>
+              </div>
+              <ul className="space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index} className="text-red-300 text-sm ml-7">• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {!showPayment ? (
             <div className="space-y-6">
@@ -169,7 +249,7 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
                 <div className="text-center">
                   <div className="bg-white p-4 rounded-xl inline-block mb-4">
                     <img 
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=fitness@paytm&pn=FitnessCoach&am=9999&cu=INR" 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=9501165019@ptaxis&pn=FitnessCoach&am=${plan.numericPrice}&cu=INR&tn=Payment for ${plan.name}`}
                       alt="UPI QR Code" 
                       className="w-48 h-48"
                     />
@@ -178,7 +258,8 @@ const AppointmentBooking: React.FC<AppointmentBookingProps> = ({ selectedPlan, o
                     Scan this QR code with any UPI app (PhonePe, Google Pay, Paytm)
                   </p>
                   <div className="bg-gray-800 rounded-lg p-3 text-center">
-                    <p className="text-white font-mono">UPI ID: fitness@paytm</p>
+                    <p className="text-white font-mono">UPI ID: 9501165019@ptaxis</p>
+                    <p className="text-gray-400 text-sm">Amount: {plan.price}</p>
                   </div>
                 </div>
               </div>
