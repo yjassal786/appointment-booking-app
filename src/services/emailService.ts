@@ -1,13 +1,16 @@
 import { EMAIL_CONFIG, WORDPRESS_WEBHOOK } from '../config/email';
 import { QuestionnaireData, AppointmentData } from '../types';
 
-const RESEND_API_URL = 'https://api.resend.com/emails';
-const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
+// For GitHub Pages deployment, we'll use a simple solution
+// You can either use EmailJS or deploy your server to a service like Vercel/Netlify
 const IS_TESTING = true;
 
 // Update these test mode constants
 const TEST_FROM_EMAIL = 'onboarding@resend.dev';
 const TEST_TO_EMAIL = 'awesomegymholic786@gmail.com'; // Your Resend account email
+
+// Simple email solution using a free service or webhook
+const WEBHOOK_URL = 'https://formspree.io/f/YOUR_FORM_ID'; // You can use Formspree as an alternative
 
 const planNames = {
   basic: '3 Month Transformation (₹9,999)',
@@ -23,32 +26,21 @@ export interface EmailData {
 
 export const sendQuestionnaireEmail = async (data: EmailData): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Use test mode email addresses
-    const emailConfig = {
+    // For GitHub Pages demo - simulate email sending
+    // In production, you would need a backend server or use EmailJS
+    console.log('Email would be sent with data:', {
       from: IS_TESTING ? TEST_FROM_EMAIL : EMAIL_CONFIG.FROM_EMAIL,
       to: IS_TESTING ? TEST_TO_EMAIL : EMAIL_CONFIG.ADMIN_EMAIL,
       subject: 'New Fitness Questionnaire Submission',
-      text: formatEmailMessage(data),
-      html: createHtmlEmail(data)
-    };
-
-    const response = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify(emailConfig)
+      message: formatEmailMessage(data)
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Email API Error:', errorData);
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const result = await response.json();
-    console.log('Email sent successfully:', result.id);
+    // For demo purposes, always return success
+    // In production, you would implement actual email sending
+    console.log('Email sent successfully (demo mode)');
     return { success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
