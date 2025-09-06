@@ -51,6 +51,8 @@ A modern, responsive appointment booking application built with React, TypeScrip
 
 This project is configured for automatic deployment to GitHub Pages using GitHub Actions.
 
+**🌐 Live Demo**: [View App](https://yjassal786.github.io/appointment-booking-app/)
+
 ### Manual Deployment
 ```bash
 npm run build
